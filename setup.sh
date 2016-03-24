@@ -30,7 +30,7 @@ sudo chmod o-wrx $WEBROOT -R
 #Create virtualhost file
 echo "<VirtualHost *:80>
         DocumentRoot /var/www/$sitename/
-        ServerName $sitename.lh
+        ServerName $sitename
         <Directory /var/www/$sitename/>
                 Options +Indexes +FollowSymLinks +MultiViews +Includes
                 AllowOverride All
