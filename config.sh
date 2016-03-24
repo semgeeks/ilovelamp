@@ -21,7 +21,12 @@ sudo chmod o-wrx $WEBROOT -R
 
 
 #Php.ini memory limit increases
-sed -i -e 's/(upload_max_file_size=).+/$132M/gi' /etc/php5/apache2/php.ini
-sed -i -e 's/(post_max_size=).+/$132M/gi' /etc/php5/apache2/php.ini
-sed -i -e 's/(memory_limit=).+/$132M/gi' /etc/php5/apache2/php.ini
+echo -e "\n"
+echo -e "Enter memory limit for php.ini (e.g. 32M): "
+
+read limit
+
+sed -i -e "s/(upload_max_file_size=).+/$1${limit}/gi" /etc/php5/apache2/php.ini
+sed -i -e "s/(post_max_size=).+/$1${limit}/gi" /etc/php5/apache2/php.ini
+sed -i -e "s/(memory_limit=).+/$1${limit}/gi" /etc/php5/apache2/php.ini
 
