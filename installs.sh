@@ -22,12 +22,14 @@ sudo apt-get -y install apache2 php5 libapache2-mod-php5 php5-mcrypt php-pear ph
 #The following commands prompt and set the MySQL root password when you install the mysql-server package.
 echo -e "\n"
 echo -e "MySQL root password: "
-
 read -s password
 
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password password ${password}"
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again password ${password}"
 sudo apt-get -y install mysql-server
+
+#Output password into file temporarily for use in setup.sh
+echo $password > pw.tmp
 
 
 #Restart all the installed services to verify that everything is installed properly

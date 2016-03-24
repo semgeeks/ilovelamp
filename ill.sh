@@ -4,9 +4,9 @@
 
 
 #Make sure everything is executable in the current directory
-sudo chmod +x ./*.sh
+sudo chmod +x *.sh
 
 
 #Run all scripts
 sudo ./installs.sh
-sudo ./config.sh
+sudo ./setup.sh
