@@ -53,9 +53,9 @@ echo -e "\n"
 echo -e "Enter memory limit for php.ini (e.g. 32M): "
 read limit
 
-sed -i -e "s/(upload_max_file_size=).+/$1${limit}/gi" /etc/php5/apache2/php.ini
-sed -i -e "s/(post_max_size=).+/$1${limit}/gi" /etc/php5/apache2/php.ini
-sed -i -e "s/(memory_limit=).+/$1${limit}/gi" /etc/php5/apache2/php.ini
+sed -i -r -e "s/(upload_max_filesize = ).+/\1${limit}/gi" /etc/php5/apache2/php.ini
+sed -i -r -e "s/(post_max_size = ).+/\1${limit}/gi" /etc/php5/apache2/php.ini
+sed -i -r -e "s/(memory_limit = ).+/\1${limit}/gi" /etc/php5/apache2/php.ini
 
 
 #Create site db and new user
@@ -73,8 +73,8 @@ read -s dbpw
 
 rootpw=$(head -n 1 pw.tmp) #Read in mysql root password from temporary file created in installs.sh
 
-sqlcommands="CREATE DATABASE IF NOT EXISTS $dbname; GRANT ALL ON $dbname.* TO $dbuser@localhost IDENTIFIED BY '$dbpw'; FLUSH PRIVILEGES;"
-mysql -u root -p $rootpw -e "$sqlcommands"
+sqlcommands="CREATE DATABASE IF NOT EXISTS $dbname;GRANT ALL ON $dbname.* TO $dbuser@localhost IDENTIFIED BY '$dbpw';FLUSH PRIVILEGES;"
+mysql -u root -p$rootpw -e "$sqlcommands"
 
 
 #Remove temporary files
