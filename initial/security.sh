@@ -8,6 +8,7 @@
 
 
 #Install fail2ban
+sudo apt-get update
 sudo apt-get install fail2ban
 
 
@@ -19,8 +20,11 @@ defretry=10
 deffind=600
 defban=3600
 
+#sed -i -r -e "s/\[DEFAULT\].*?(bantime = ).+/\1${defban}/i"
+
 
 #Configure default Firewall
+#    Drop all connections except for traffic going through ports 22, 80 or 3306
 sudo iptables -A INPUT -i lo -j ACCEPT
 sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
