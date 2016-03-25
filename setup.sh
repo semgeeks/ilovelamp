@@ -7,7 +7,6 @@
 #sudo ./SCRIPTNAME.sh
 
 
-
 #Enable Apache and php5 modules
 sudo php5enmod mcrypt
 sudo a2enmod rewrite
@@ -50,7 +49,7 @@ sudo a2ensite $sitename
 
 #Php.ini memory limit increases
 echo -e "\n"
-echo -e "Enter memory limit for php.ini (e.g. 32M): "
+echo -e "Enter memory limit, upload_max_filesize, and post_max_size for php.ini (e.g. 32M): "
 read limit
 
 sed -i -r -e "s/(upload_max_filesize = ).+/\1${limit}/gi" /etc/php5/apache2/php.ini
@@ -75,11 +74,3 @@ rootpw=$(head -n 1 pw.tmp) #Read in mysql root password from temporary file crea
 
 sqlcommands="CREATE DATABASE IF NOT EXISTS $dbname;GRANT ALL ON $dbname.* TO $dbuser@localhost IDENTIFIED BY '$dbpw';FLUSH PRIVILEGES;"
 mysql -u root -p$rootpw -e "$sqlcommands"
-
-
-#Remove temporary files
-sudo rm -rf *.tmp
-
-
-#Restart servers to read in new configurations
-sudo service apache2 restart && service mysql restart > /dev/null

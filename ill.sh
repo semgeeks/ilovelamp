@@ -10,3 +10,5 @@ sudo chmod +x *.sh
 #Run all scripts
 sudo ./installs.sh
 sudo ./setup.sh
+sudo ./security.sh
+sudo ./cleanup.sh
