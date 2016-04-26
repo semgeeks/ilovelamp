@@ -48,16 +48,15 @@ fi
 done
 
 # Backup and compress site files
-gzip < "${website_root_dir}" > "${backup_dir}/${site_name}_site_files.gz"
-chmod 600 "${backup_dir}/${site_name}_site_files.gz"
+tar -zcvf "${backup_dir}/${site_name}_site_files.tar.gz" "${website_root_dir}"
+chmod 600 "${backup_dir}/${site_name}_site_files.tar.gz"
 
 # Compress DB and site files
-gzip < "${backup_dir}" > "${backup_dir}/${site_name}-${backup_date}.gz"
-chmod 700 "${backup_dir}"
+tar -zcvf "${backup_parent_dir}/${site_name}-${backup_date}.tar.gz" "${backup_dir}"
 
 # Send to compressed backup directory to dropbox
 curl -X POST https://content.dropboxapi.com/2/files/upload \
-  --header 'Authorization: Bearer ${dropbox_api_key}' \
+  --header 'Authorization: Bearer "${dropbox_api_key}"' \
   --header 'Content-Type: application/octet-stream' \
   --header 'Dropbox-API-Arg: {"path":"/semgeeks clients/${dropbox_client_name}/Web/Backups/${site_name}-${backup_date}.gz"' \
   --data-binary @'${backup_dir}/${site_name}-${backup_date}.gz'
