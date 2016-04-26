@@ -15,8 +15,21 @@ echo "##########################################################################
 sudo apt-get update
 
 
-#Apache, Php, MySQL and required packages installation
-sudo apt-get -y install apache2 php5 libapache2-mod-php5 php5-mcrypt php-pear php5-curl php5-mysql php5-gd php5-cli php5-dev mysql-client
+#Apache, Php, MySQL, and required packages installation
+sudo apt-get -y install apache2 php5 libapache2-mod-php5 php5-mcrypt php-pear php5-curl php5-mysql php5-gd php5-cli php5-dev mysql-client curl
+
+#Composer install
+sudo curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
+
+#NodeJS, NPM install
+curl -sL https://deb.nodesource.com/setup_5.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+#Bower, Gulp install
+sudo npm install -g bower
+sudo npm install -g gulp
+
+
 
 
 #The following commands prompt and set the MySQL root password when you install the mysql-server package.

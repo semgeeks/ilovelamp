@@ -9,7 +9,7 @@
 
 #Install fail2ban
 sudo apt-get update
-sudo apt-get install fail2ban
+sudo apt-get -y install fail2ban
 
 
 #Copy and configure the local jail file
@@ -31,3 +31,6 @@ sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 3306 -j ACCEPT
 sudo iptables -A INPUT -j DROP
+
+#Install persistent IPTables package to save current configuration and auto-load on server restart
+sudo apt-get -y install iptables-persistent
