@@ -4,7 +4,9 @@ backup_parent_dir="/var/www/scheduled/backups"
 website_root_dir="/var/www/html/NAME_HERE"
 site_name="NAME_HERE"
 dropbox_client_name="DROPBOX_CLIENT_FOLDER_NAME"
+dropbox_folder_path="/semgeeks clients/${dropbox_client_name}/Web/Backups"
 dropbox_api_key="API_KEY"
+max_backups="NUM_BACKUPS"
 
 # MySQL settings
 mysql_user="USERNAME"
@@ -59,7 +61,42 @@ tar -zcvf "${site_name}-${backup_date}.tar.gz" "${backup_dir}"
 uploadURL="https://content.dropboxapi.com/2/files/upload"
 header1="Authorization: Bearer ${dropbox_api_key}"
 header2="Content-Type: application/octet-stream"
-header3="Dropbox-API-Arg: {\"path\":\"/semgeeks clients/${dropbox_client_name}/Web/Backups/${site_name}-${backup_date}.tar.gz\", \"mode\": \"add\"}"
+header3="Dropbox-API-Arg: {\"path\":\"${dropbox_folder_path}/${site_name}-${backup_date}.tar.gz\", \"mode\": \"add\"}"
 file="@${site_name}-${backup_date}.tar.gz"
 
-curl -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" --data-binary "${file}" ${uploadURL}
+curl -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" --data-binary "${file}" ${uploadURL} >/dev/null 2>&1
+
+# Only keep the required amounts of backups - delete the oldest
+listURL="https://api.dropboxapi.com/2/files/list_folder"
+header1="Authorization: Bearer ${dropbox_api_key}"
+header2="Content-Type: application/json"
+data="{\"path\":\"${dropbox_folder_path}\",\"recursive\":false}"
+tmpFile="filenames"
+
+# List the backups and names to a temporary folder
+curl -X "POST" --header "${header1}" --header "${header2}" --data "${data}" ${listURL} | sed -r -e "s/,\s/\n/gi" | grep "name" | sed -r -e "s/\"name\":\s\"(.+)\"/\1/gi" | sort > ${tmpFile}
+current_backups=`wc -l ${tmpFile} | sed -r -e "s/[^0-9]//gi"`
+
+deleteURL="https://api.dropboxapi.com/2/files/delete"
+header1="Authorization: Bearer ${dropbox_api_key}"
+header2="Content-Type: application/json"
+
+# Delete the oldest backups if maximum backups allowed is exceeded
+while true;
+do
+  if (( "${current_backups}" > "${max_backups}" ));
+  then
+    oldestFile=`head -1 ${tmpFile}`
+    data="{\"path\":\"${dropbox_folder_path}/${oldestFile}\"}"
+    curl -X "POST" --header "${header1}" --header "${header2}" --data "${data}" ${deleteURL} >/dev/null 2>&1
+
+    tail -n +2 "${tmpFile}" > "${tmpFile}.tmp" && mv "${tmpFile}.tmp" "${tmpFile}"
+    (( current_backups=${current_backups}-1 ))
+  else
+    break
+  fi
+done
+
+# Cleanup
+rm -rf ${tmpFile}
+rm -rf ${site_name}-*
