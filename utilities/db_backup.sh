@@ -57,14 +57,33 @@ chmod 600 "${backup_dir}/${site_name}_site_files.tar.gz"
 # Compress DB and site files
 tar -zcvf "${site_name}-${backup_date}.tar.gz" "${backup_dir}"
 
-# Send to compressed backup directory to dropbox
-uploadURL="https://content.dropboxapi.com/2/files/upload"
+# Open session for upload
+session_start_url="https://content.dropboxapi.com/2/files/upload_session/start"
 header1="Authorization: Bearer ${dropbox_api_key}"
 header2="Content-Type: application/octet-stream"
-header3="Dropbox-API-Arg: {\"path\":\"${dropbox_folder_path}/${site_name}-${backup_date}.tar.gz\", \"mode\": \"add\"}"
-file="@${site_name}-${backup_date}.tar.gz"
+header3="Dropbox-API-Arg: {}"
+sessionID=`curl -v -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" ${session_start_url} | sed -r -e "s/.*\"session_id\":\s\"(.+)\".*/\1/gi"`
 
-curl -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" --data-binary "${file}" ${uploadURL} >/dev/null 2>&1
+# Split file into 150M chunks and add chunk to session
+mkdir -p pieces
+split --bytes=150M "${site_name}-${backup_date}.tar.gz" "pieces/chunk-"
+offset=0
+chunks=pieces/*
+session_append_url="https://content.dropboxapi.com/2/files/upload_session/append_v2"
+
+for chunk in ${chunks}
+do
+  header3="Dropbox-API-Arg: {\"cursor\":{\"session_id\":\"${sessionID}\",\"offset\":${offset}}}"
+  file="@${chunk}"
+  curl -v -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" --data-binary "${file}" ${session_append_url}
+  (( offset=${offset}+`wc -c "${chunk}" | sed -r -e "s/([0-9]*)\s.*/\1/gi"` ))
+done
+
+# Close session
+session_finish_url="https://content.dropboxapi.com/2/files/upload_session/finish"
+header3="Dropbox-API-Arg: {\"cursor\":{\"session_id\":\"${sessionID}\",\"offset\":${offset}},\"commit\":{\"path\":\"${dropbox_folder_path}/${site_name}-${backup_date}.tar.gz\"}}"
+curl -v -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" ${session_finish_url}
+
 
 # Only keep the required amounts of backups - delete the oldest
 listURL="https://api.dropboxapi.com/2/files/list_folder"
@@ -99,4 +118,6 @@ done
 
 # Cleanup
 rm -rf ${tmpFile}
+rm -rf pieces
 rm -rf ${site_name}-*
+rm -rf ${backup_dir}
