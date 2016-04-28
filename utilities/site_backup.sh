@@ -45,44 +45,66 @@ do
   :
 
   else
-  echo "Creating backup of \"${database}\" database"
-  mysqldump ${additional_mysqldump_params} --user=${mysql_user} --password=${mysql_password} ${database} | gzip > "${backup_dir}/${database}.sql.gz"
-  chmod 600 "${backup_dir}/${database}.sql.gz"
-fi
+    echo "Creating backup of \"${database}\" database"
+    mysqldump ${additional_mysqldump_params} --user=${mysql_user} --password=${mysql_password} ${database} | gzip > "${backup_dir}/${database}.sql.gz"
+    chmod 600 "${backup_dir}/${database}.sql.gz"
+  fi
 done
 
 # Backup and compress site files
-tar -zcvf "${backup_dir}/${site_name}_site_files.tar.gz" "${website_root_dir}"
+tar -zcf "${backup_dir}/${site_name}_site_files.tar.gz" "${website_root_dir}"
 chmod 600 "${backup_dir}/${site_name}_site_files.tar.gz"
 # Compress DB and site files
-tar -zcvf "${site_name}-${backup_date}.tar.gz" "${backup_dir}"
+tar -zcf "${site_name}-${backup_date}.tar.gz" "${backup_dir}"
 
 # Open session for upload
 session_start_url="https://content.dropboxapi.com/2/files/upload_session/start"
 header1="Authorization: Bearer ${dropbox_api_key}"
 header2="Content-Type: application/octet-stream"
 header3="Dropbox-API-Arg: {}"
-sessionID=`curl -v -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" ${session_start_url} | sed -r -e "s/.*\"session_id\":\s\"(.+)\".*/\1/gi"`
+sessionID=`curl -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" ${session_start_url} | sed -r -e "s/.*\"session_id\":\s\"(.+)\".*/\1/gi"`
+
 
 # Split file into 150M chunks and add chunk to session
-mkdir -p pieces
-split --bytes=150M "${site_name}-${backup_date}.tar.gz" "pieces/chunk-"
+chunk_dir="pieces"
+mkdir -p "${chunk_dir}"
+split --bytes=150M "${site_name}-${backup_date}.tar.gz" "${chunk_dir}/chunk-"
+chunks=${chunk_dir}/*
+
 offset=0
-chunks=pieces/*
 session_append_url="https://content.dropboxapi.com/2/files/upload_session/append_v2"
+response_file="response"
 
 for chunk in ${chunks}
 do
-  header3="Dropbox-API-Arg: {\"cursor\":{\"session_id\":\"${sessionID}\",\"offset\":${offset}}}"
-  file="@${chunk}"
-  curl -v -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" --data-binary "${file}" ${session_append_url}
+
+  while true;
+  do
+    header3="Dropbox-API-Arg: {\"cursor\":{\"session_id\":\"${sessionID}\",\"offset\":${offset}}}"
+    file="@${chunk}"
+    curl -v -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" --data-binary "${file}" ${session_append_url} > ${response_file}
+
+    grep -q "incorrect_offset" ${response_file}
+    result=$?
+
+    if [ "${result}" -ne 0 ];
+    then
+      echo -n "Error in last send. Retrying..."
+    else
+      break
+    fi
+
+    rm -rf ${response_file}
+  done
+
   (( offset=${offset}+`wc -c "${chunk}" | sed -r -e "s/([0-9]*)\s.*/\1/gi"` ))
 done
 
 # Close session
 session_finish_url="https://content.dropboxapi.com/2/files/upload_session/finish"
 header3="Dropbox-API-Arg: {\"cursor\":{\"session_id\":\"${sessionID}\",\"offset\":${offset}},\"commit\":{\"path\":\"${dropbox_folder_path}/${site_name}-${backup_date}.tar.gz\"}}"
-curl -v -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" ${session_finish_url}
+curl -v -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" ${session_finish_url} > dropbox_response
+
 
 
 # Only keep the required amounts of backups - delete the oldest
@@ -100,6 +122,7 @@ deleteURL="https://api.dropboxapi.com/2/files/delete"
 header1="Authorization: Bearer ${dropbox_api_key}"
 header2="Content-Type: application/json"
 
+
 # Delete the oldest backups if maximum backups allowed is exceeded
 while true;
 do
@@ -107,7 +130,7 @@ do
   then
     oldestFile=`head -1 ${tmpFile}`
     data="{\"path\":\"${dropbox_folder_path}/${oldestFile}\"}"
-    curl -X "POST" --header "${header1}" --header "${header2}" --data "${data}" ${deleteURL} >/dev/null 2>&1
+    curl -X "POST" --header "${header1}" --header "${header2}" --data "${data}" ${deleteURL}
 
     tail -n +2 "${tmpFile}" > "${tmpFile}.tmp" && mv "${tmpFile}.tmp" "${tmpFile}"
     (( current_backups=${current_backups}-1 ))
@@ -116,8 +139,33 @@ do
   fi
 done
 
+# Send mail via mailgun reporting success/failure status of backup
+mailgun_api_key="MAILGUN_SECRET_KEY"
+mailgun_domain="semgeeks.com"
+mailgun_url="https://api.mailgun.net/v3/${mailgun_domain}/messages"
+
+grep -q "path_lower" dropbox_response
+result=$?
+
+if [ "${result}" -eq 0 ];
+then
+  backup_link=`echo "${dropbox_folder_path}" | sed -r -e "s/\s/%20/gi"`
+  message_text="Backup for ${site_name} Successful. Backup visible here: https://www.dropbox.com/home${backup_link}"
+else
+  message_text="Backup for ${site_name} Failed. Dropbox Error Information: `cat dropbox_response`"
+fi
+
+curl -s --user "api:${mailgun_api_key}" \
+    -F from="Backup Script <backups@${mailgun_domain}>" \
+    -F to="TO_ADDRESS" \
+    -F subject="Backup Information For ${site_name}" \
+    -F text="${message_text}" \
+    ${mailgun_url}
+
 # Cleanup
 rm -rf ${tmpFile}
-rm -rf pieces
+rm -rf ${response_file}
+rm -rf ${chunk_dir}
 rm -rf ${site_name}-*
-rm -rf ${backup_dir}
+rm -rf ${backup_parent_dir}/*
+
