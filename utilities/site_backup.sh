@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Dependency list
+bin_dependencies="curl mysql tar gzip sed date sort wc grep head tail mv cat split mkdir"
+
 # Web Server Settings
 backup_parent_dir="/var/www/scheduled/backups"
 website_root_dir="/var/www/html/NAME_HERE"
@@ -20,6 +23,19 @@ max_backups="NUM_BACKUPS"  # maximum number of backups to store in dropbox folde
 mailgun_api_key="MAILGUN_SECRET_KEY"
 mailgun_domain="semgeeks.com"
 mailgun_url="https://api.mailgun.net/v3/${mailgun_domain}/messages"
+
+
+# Die if dependencies not installed
+for dep in $bin_dependencies; 
+do
+  which ${dep} > /dev/null
+
+  if [ $? -ne 0 ]; 
+  then
+    echo -e "${dep} command not found on server. Please install and try again."
+    exit -1
+  fi
+done
 
 
 
@@ -73,7 +89,7 @@ session_start_url="https://content.dropboxapi.com/2/files/upload_session/start"
 header1="Authorization: Bearer ${dropbox_api_key}"
 header2="Content-Type: application/octet-stream"
 header3="Dropbox-API-Arg: {}"
-sessionID=`curl -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" ${session_start_url} | sed -r -e "s/.*\"session_id\":\s\"(.+)\".*/\1/gi"`
+session_id=`curl -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" ${session_start_url} | sed -r -e "s/.*\"session_id\":\s\"(.+)\".*/\1/gi"`
 
 
 # Split file into 150M chunks and add chunk to session
@@ -91,7 +107,7 @@ do
 
   while true;
   do
-    header3="Dropbox-API-Arg: {\"cursor\":{\"session_id\":\"${sessionID}\",\"offset\":${offset}}}"
+    header3="Dropbox-API-Arg: {\"cursor\":{\"session_id\":\"${session_id}\",\"offset\":${offset}}}"
     file="@${chunk}"
     curl -v -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" --data-binary "${file}" ${session_append_url} > ${response_file}
 
@@ -113,23 +129,23 @@ done
 
 # Close session
 session_finish_url="https://content.dropboxapi.com/2/files/upload_session/finish"
-header3="Dropbox-API-Arg: {\"cursor\":{\"session_id\":\"${sessionID}\",\"offset\":${offset}},\"commit\":{\"path\":\"${dropbox_folder_path}/${site_name}-${backup_date}.tar.gz\"}}"
+header3="Dropbox-API-Arg: {\"cursor\":{\"session_id\":\"${session_id}\",\"offset\":${offset}},\"commit\":{\"path\":\"${dropbox_folder_path}/${site_name}-${backup_date}.tar.gz\"}}"
 curl -v -X "POST" --header "${header1}" --header "${header2}" --header "${header3}" ${session_finish_url} > dropbox_response
 
 
 
 # Only keep the required amounts of backups - delete the oldest
-listURL="https://api.dropboxapi.com/2/files/list_folder"
+list_url="https://api.dropboxapi.com/2/files/list_folder"
 header1="Authorization: Bearer ${dropbox_api_key}"
 header2="Content-Type: application/json"
 data="{\"path\":\"${dropbox_folder_path}\",\"recursive\":false}"
 tmpFile="filenames"
 
 # List the backups and names to a temporary folder
-curl -X "POST" --header "${header1}" --header "${header2}" --data "${data}" ${listURL} | sed -r -e "s/,\s/\n/gi" | grep "name" | sed -r -e "s/\"name\":\s\"(.+)\"/\1/gi" | sort > ${tmpFile}
+curl -X "POST" --header "${header1}" --header "${header2}" --data "${data}" ${list_url} | sed -r -e "s/,\s/\n/gi" | grep "name" | sed -r -e "s/\"name\":\s\"(.+)\"/\1/gi" | sort > ${tmpFile}
 current_backups=`wc -l ${tmpFile} | sed -r -e "s/[^0-9]//gi"`
 
-deleteURL="https://api.dropboxapi.com/2/files/delete"
+delete_url="https://api.dropboxapi.com/2/files/delete"
 header1="Authorization: Bearer ${dropbox_api_key}"
 header2="Content-Type: application/json"
 
@@ -141,7 +157,7 @@ do
   then
     oldestFile=`head -1 ${tmpFile}`
     data="{\"path\":\"${dropbox_folder_path}/${oldestFile}\"}"
-    curl -X "POST" --header "${header1}" --header "${header2}" --data "${data}" ${deleteURL}
+    curl -X "POST" --header "${header1}" --header "${header2}" --data "${data}" ${delete_url}
 
     tail -n +2 "${tmpFile}" > "${tmpFile}.tmp" && mv "${tmpFile}.tmp" "${tmpFile}"
     (( current_backups=${current_backups}-1 ))
@@ -176,4 +192,6 @@ rm -rf ${response_file}
 rm -rf ${chunk_dir}
 rm -rf ${site_name}-*
 rm -rf ${backup_parent_dir}/*
+
+echo -e "Temporary files cleaned. Run 'crontab -e' to open the crontab editor and schedule future backups."
 
