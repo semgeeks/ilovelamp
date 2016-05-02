@@ -1,16 +1,27 @@
 #!/bin/bash
 
+# Web Server Settings
 backup_parent_dir="/var/www/scheduled/backups"
 website_root_dir="/var/www/html/NAME_HERE"
 site_name="NAME_HERE"
-dropbox_client_name="DROPBOX_CLIENT_FOLDER_NAME"
-dropbox_folder_path="/semgeeks clients/${dropbox_client_name}/Web/Backups"
-dropbox_api_key="API_KEY"
-max_backups="NUM_BACKUPS"
 
 # MySQL settings
 mysql_user="USERNAME"
 mysql_password="PASSWORD"
+mysql_host="localhost" 
+
+# Dropbox settings
+dropbox_client_name="DROPBOX_CLIENT_FOLDER_NAME"
+dropbox_folder_path="/semgeeks clients/${dropbox_client_name}/Web/Backups"
+dropbox_api_key="API_KEY"
+max_backups="NUM_BACKUPS"  # maximum number of backups to store in dropbox folder
+
+# Mailgun settings
+mailgun_api_key="MAILGUN_SECRET_KEY"
+mailgun_domain="semgeeks.com"
+mailgun_url="https://api.mailgun.net/v3/${mailgun_domain}/messages"
+
+
 
 # Read MySQL password from stdin if empty
 if [ -z "${mysql_password}" ]; then
@@ -20,7 +31,7 @@ if [ -z "${mysql_password}" ]; then
 fi
 
 # Check MySQL password
-echo exit | mysql --user=${mysql_user} --password=${mysql_password} -B 2>/dev/null
+echo exit | mysql --host=${mysql_host} --user=${mysql_user} --password=${mysql_password} -B 2>/dev/null
 if [ "$?" -gt 0 ]; then
   echo "MySQL ${mysql_user} password incorrect"
   exit 1
@@ -36,7 +47,7 @@ mkdir -p "${backup_dir}"
 chmod 700 "${backup_dir}"
 
 # Get MySQL databases
-mysql_databases=`echo 'show databases' | mysql --user=${mysql_user} --password=${mysql_password} -B | sed /^Database$/d`
+mysql_databases=`echo 'show databases' | mysql --host=${mysql_host} --user=${mysql_user} --password=${mysql_password} -B | sed /^Database$/d`
 
 # Backup and compress each database
 for database in $mysql_databases
@@ -46,7 +57,7 @@ do
 
   else
     echo "Creating backup of \"${database}\" database"
-    mysqldump ${additional_mysqldump_params} --user=${mysql_user} --password=${mysql_password} ${database} | gzip > "${backup_dir}/${database}.sql.gz"
+    mysqldump ${additional_mysqldump_params} --host=${mysql_host} --user=${mysql_user} --password=${mysql_password} ${database} | gzip > "${backup_dir}/${database}.sql.gz"
     chmod 600 "${backup_dir}/${database}.sql.gz"
   fi
 done
@@ -54,7 +65,7 @@ done
 # Backup and compress site files
 tar -zcf "${backup_dir}/${site_name}_site_files.tar.gz" "${website_root_dir}"
 chmod 600 "${backup_dir}/${site_name}_site_files.tar.gz"
-# Compress DB and site files
+# Compress DB and site files together
 tar -zcf "${site_name}-${backup_date}.tar.gz" "${backup_dir}"
 
 # Open session for upload
@@ -139,11 +150,8 @@ do
   fi
 done
 
-# Send mail via mailgun reporting success/failure status of backup
-mailgun_api_key="MAILGUN_SECRET_KEY"
-mailgun_domain="semgeeks.com"
-mailgun_url="https://api.mailgun.net/v3/${mailgun_domain}/messages"
 
+# Send mail via mailgun reporting success/failure status of backup
 grep -q "path_lower" dropbox_response
 result=$?
 
@@ -157,7 +165,7 @@ fi
 
 curl -s --user "api:${mailgun_api_key}" \
     -F from="Backup Script <backups@${mailgun_domain}>" \
-    -F to="TO_ADDRESS" \
+    -F to="MAIL_TO_ADDRESS" \
     -F subject="Backup Information For ${site_name}" \
     -F text="${message_text}" \
     ${mailgun_url}
