@@ -6,6 +6,9 @@
 #
 #sudo ./SCRIPTNAME.sh
 
+echo "###################################################################################"
+echo "Installing security packages..."
+echo "###################################################################################"
 
 #Install fail2ban
 sudo apt-get update
@@ -22,6 +25,10 @@ defban=3600
 
 #sed -i -r -e "s/\[DEFAULT\].*?(bantime = ).+/\1${defban}/i"
 
+
+echo "###################################################################################"
+echo "Configuring default firewall..."
+echo "###################################################################################"
 
 #Configure default Firewall
 #    Drop all connections except for traffic going through ports 22, 80 or 3306

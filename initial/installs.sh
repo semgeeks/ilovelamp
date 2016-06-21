@@ -8,12 +8,16 @@
 
 
 echo "###################################################################################"
-echo "Please be Patient: Installation will start now.......and it will take some time :)"
+echo "Updating repository information..."
 echo "###################################################################################"
 
 #Update the repositories
 sudo apt-get update
 
+
+echo "###################################################################################"
+echo "Installing packages..."
+echo "###################################################################################"
 
 #Apache, Php, MySQL, and required packages installation
 sudo apt-get -y install apache2 php5 libapache2-mod-php5 php5-mcrypt php-pear php5-curl php5-mysql php5-gd php5-cli php5-dev mysql-client curl
@@ -33,9 +37,19 @@ sudo npm install -g gulp
 
 
 #The following commands prompt and set the MySQL root password when you install the mysql-server package.
-echo -e "\n"
-echo -e "MySQL root password: "
-read -s password
+while true
+do
+	echo -e "\n"
+	echo -e "Create MySQL root password: "
+	read -s password
+	echo -e "\n"
+
+	echo -e "Confirm MySQL root password: "
+	read -s password2
+
+	[ "$password" = "$password2" ] && break
+    	echo "Passwords did not match. Please try again."
+done
 
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password password ${password}"
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again password ${password}"
