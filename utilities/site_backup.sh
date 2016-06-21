@@ -21,6 +21,7 @@ max_backups="NUM_BACKUPS"  # maximum number of backups to store in dropbox folde
 
 # Mailgun settings
 mailgun_api_key="MAILGUN_SECRET_KEY"
+mailgun_mailto="MAIL_TO_ADDRESS"
 mailgun_domain="semgeeks.com"
 mailgun_url="https://api.mailgun.net/v3/${mailgun_domain}/messages"
 
@@ -181,7 +182,7 @@ fi
 
 curl -s --user "api:${mailgun_api_key}" \
     -F from="Backup Script <backups@${mailgun_domain}>" \
-    -F to="MAIL_TO_ADDRESS" \
+    -F to="${mailgun_mailto}" \
     -F subject="Backup Information For ${site_name}" \
     -F text="${message_text}" \
     ${mailgun_url}
