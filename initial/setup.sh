@@ -29,10 +29,11 @@ do
 	echo -e "Is this a Bedrock install? (y/n): "
 	read bedrock_answer
 
-	if [ $bedrock_answer == "y" || $bedrock_answer == "Y" ]
+	if [[ $bedrock_answer == "y" || $bedrock_answer == "Y" ]];
 	then
-		$is_bedrock=true
-	elif [ $bedrock_answer == "n" || $bedrock_answer == "N" ]
+		is_bedrock=true
+		break
+	elif [[ $bedrock_answer == "n" || $bedrock_answer == "N" ]];
 	then
 		break
 	else 
@@ -58,7 +59,7 @@ echo "Creating new Virtualhost..."
 echo "###################################################################################"
 
 #Create virtualhost file
-if [ $is_bedrock ]
+if [[ $is_bedrock == "true" ]];
 then
 	echo "<VirtualHost *:80>
 	        DocumentRoot ${WEBROOT}/public/web/
