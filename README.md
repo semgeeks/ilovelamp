@@ -4,7 +4,7 @@
 Do you really love LAMP? Or are you just looking at repositories and saying you love them?
 
 ## Notes
-It is not recommended to keep this repository in a publicly accessible directory on the target server. For best results, run as root user or with root-level access. Currently assumes a Debian-based Linux distribution but may be expanded in the future to support Red Hat-based distributions.
+It is not recommended to keep this repository in a publicly accessible directory on the target server. For best results, run as root user or with root-level access on a VPS (shared hosting functionality to be added later). Currently assumes a Debian-based Linux distribution but may be expanded in the future to support Red Hat-based distributions.
 
 
 # Initial
@@ -29,11 +29,13 @@ Core Packages installed (latest stable versions unless otherwise mentioned):
 Assumes package dependencies have been installed by installs.sh. When prompted for the following information, see the associated requirements:
 
 - Site Directory Name:
-  - Use the website's current or intended domain name. This information will get fed into the 'ServerName' field in the next step when creating the new VirtualHost.
+  - Use the website's current or intended domain name. This information will get fed into the 'ServerName' field in the next step when creating the new VirtualHost. Adjustments will be made to the webroot if the project to be cloned later in the script is a Roots Bedrock-based installed.
 - Php.ini limits
   - Note the variables shown will all be changed to the same value and must have a trailing M or G depending on the value given. If "32M" was supplied, upload_max_filesize, post_max_size, memory_limit will all be changed to 32M simultaneously. For websites requiring video uploads or large files, a larger limit may be necessary. Recommended to set at at least 8M as the default is 2M and typically needs to be raised.
 - Database Information
   - The credentials created here are to be used for the operation of the website. The user created for this database will only be assigned privileges to this database.
+- Git Information
+  - Entering a git repository URL at the prompt allows the script to clone the repository to the web root. If the git project specified is a Roots Bedrock-based project, it will run its associated dependency installs.
 
 ### security.sh
 Basic Security Software Installed:
