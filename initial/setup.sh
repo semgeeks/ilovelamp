@@ -134,9 +134,46 @@ do
 	    echo "Passwords did not match. Please try again."
 done
 
+#Read in mysql root password from temporary file created in installs.sh. Prompt for input if pw.tmp was not created - this script is likely being run standalone.
+if [ -e "pw.tmp" ];
+then
+	rootpw=$(head -n 1 pw.tmp) 
+else
+	echo -e "\n"
+	echo -e "Enter MySQL root user's password: "
+	read -s rootpw
+fi
 
-rootpw=$(head -n 1 pw.tmp) #Read in mysql root password from temporary file created in installs.sh
 
 sqlcommands="CREATE DATABASE IF NOT EXISTS $dbname;GRANT ALL ON $dbname.* TO $dbuser@localhost IDENTIFIED BY '$dbpw';FLUSH PRIVILEGES;"
 mysql -u root -p$rootpw -e "$sqlcommands"
 
+
+# Obtain git repository information
+echo -e "\n"
+echo -e "Enter full http git repository URL, or 'q' to skip this step: "
+read git_repo
+
+if [[ $git_repo != "q" && $git_repo != "Q" ]];
+then
+
+	# Make sure url provided is a .git url
+	if [[ $git_repo == *git ]];
+	then
+		# Clone repository into webroot
+		git clone $git_repo $WEBROOT
+
+		# Run dependency installs if it's a bedrock project. Note the theme name will need to be changed or prompted for if different from 'worpdess' (semgeeks fork of sage theme)
+		if [[ $is_bedrock == "true" ]];
+		then
+			export WEBROOT # Turn WEBROOT into an environment variable so subshell can access its value
+			$(cd $WEBROOT/public && composer install && cd web/app/themes/worpdess && npm install && bower install && gulp)
+		fi
+
+	else
+		echo -e "\n"
+		echo "###################################################################################"
+		echo "INVALID REPOSITORY URL. TRY AGAIN ONCE SCRIPT EXECUTION HAS COMPLETED."
+		echo "###################################################################################"
+	fi
+fi 

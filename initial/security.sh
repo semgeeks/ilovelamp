@@ -19,9 +19,9 @@ sudo apt-get -y install fail2ban
 sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
 
 #Config defaults (fixing later)
-defretry=10
-deffind=600
-defban=3600
+#defretry=10
+#deffind=600
+#defban=3600
 
 #sed -i -r -e "s/\[DEFAULT\].*?(bantime = ).+/\1${defban}/i"
 
