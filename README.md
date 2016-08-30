@@ -12,35 +12,31 @@ It is not recommended to keep this repository in a publicly accessible directory
 Once you've connected to your sever with ssh run the following commands:
 
 
-`
-sudo apt-get update  
-sudo apt-get install git  
-sudo git clone https://github.com/semgeeks/ilovelamp.git  
-cd ilovelamp/initial/  
-sudo chmod +x ill.sh  
-sudo ./ill.sh
-`
+    sudo apt-get update
+    sudo apt-get install git
+    sudo git clone https://github.com/semgeeks/ilovelamp.git
+    cd ilovelamp/initial/
+    sudo chmod +x ill.sh
+    sudo ./ill.sh
 
 
 Once you've executed ill.sh you'll be prompted to input information. If you're unsure of what to put refer to this the inputs below which are listed in the same order as you'll be asked.
 
 
-`
-<MYSQL unique password>  
-<MYSQL unique password confirm>  
-<site name>  
-y  
-64m  
-<site name>_db  
-<site name>_db_user  
-<database user unique password>  
-<database user unique password confirm>  
-<path to git repo>  
-<your git username>  
-<your git password>  
-yes <enter>  
-yes <enter>
-`
+    <MYSQL unique password>
+    <MYSQL unique password confirm>
+    <site name>
+    y
+    64m
+    <site name>_db
+    <site name>_db_user
+    <database user unique password>
+    <database user unique password confirm>
+    <path to git repo>
+    <your git username>
+    <your git password>
+    yes <enter>
+    yes <enter>
 
 
 ##Let's Encrypt
@@ -49,12 +45,10 @@ Once you've set up your server you might as well set up an ssl certificate while
 First is going into your opt folder where 3rd party software should be installed. Then clone the Let's Encrypt repository from git. Once you've pulled that down you're going to be running an apache install.
 
 
-`
-cd /opt  
-git clone https://github.com/letsencrypt/letsencrypt  
-cd letsencrypt  
-./letsencrypt-auto --apache --agree-tos
-`
+    cd /opt
+    git clone https://github.com/letsencrypt/letsencrypt
+    cd letsencrypt
+    ./letsencrypt-auto --apache --agree-tos
 
 
 The rest is done in their gui. We don't have steps for this yet, this will probably be automated later. You should probably select all relevent domains when generating the ssl (example.com and www.example). You should force https. Emails should be directed to dev@semgeeks.com. 
@@ -62,36 +56,32 @@ The rest is done in their gui. We don't have steps for this yet, this will proba
 After that your site should be set up with https but the ssl certificate will run out in a couple months. So the next step is automating the renewal of your ssl certificates by running by setting up a cron job in your crontab. To access your crontab run these commands: 
 
 
-`
-cd /etc  
-sudo vim crontab
-`
+    cd /etc
+    sudo vim crontab
 
 
 Next add this line somewhere in your crontab: (be sure to replace the word <user> with the user you're running these commands as for example: root)
 
-`30 2 * * 1 <user> sudo /opt/letsencrypt/letsencrypt-auto renew >> /var/log/le-renew.log`
+    30 2 * * 1 <user> sudo /opt/letsencrypt/letsencrypt-auto renew >> /var/log/le-renew.log
 
 
 
 Save your file and run this command to test if renewing is working by running this command:
 
-`sudo /opt/letsencrypt/letsencrypt-auto renew >> /var/log/le-renew.log`
+    sudo /opt/letsencrypt/letsencrypt-auto renew >> /var/log/le-renew.log
 
 
 If the command went through you're done. If you got permissions errors you'll have to add your user to the group that can edit files in the log folder. Run these commands, which will update the users group and log you out so that the changes take place: (be sure to replace <user> with the same account as your cron job)
 
 
-`
-sudo adduser <user> syslog  
-logout
-`
+    sudo adduser <user> syslog
+    logout
 
 
 Log back in and run a test renewal like before chances are this time you shouldn't get any errors:
 
 
-`sudo /opt/letsencrypt/letsencrypt-auto renew >> /var/log/le-renew.log`
+    sudo /opt/letsencrypt/letsencrypt-auto renew >> /var/log/le-renew.log
 
 
 
