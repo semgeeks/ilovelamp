@@ -51,7 +51,7 @@ First is going into your opt folder where 3rd party software should be installed
     ./letsencrypt-auto --apache --agree-tos
 
 
-The rest is done in their gui. We don't have steps for this yet, this will probably be automated later. You should probably select all relevent domains when generating the ssl (example.com and www.example). You should force https. Emails should be directed to dev@semgeeks.com. 
+The rest is done in their gui. We don't have steps for this yet, this will probably be automated later. You should probably select all relevant domains when generating the ssl (example.com and www.example). You should force https. Emails should be directed to dev@semgeeks.com. 
 
 After that your site should be set up with https but the ssl certificate will run out in a couple months. So the next step is automating the renewal of your ssl certificates by running by setting up a cron job in your crontab. To access your crontab run these commands: 
 
