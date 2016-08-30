@@ -10,7 +10,7 @@ It is not recommended to keep this repository in a publicly accessible directory
 # Setup
 ##ilovelamp
 Once you've connected to your sever with ssh run the following commands:
-`
+
 
 sudo apt-get update
 
@@ -24,7 +24,6 @@ sudo chmod +x ill.sh
 
 sudo ./ill.sh
 
-`
 
 Once you've executed ill.sh you'll be prompted to input information. If you're unsure of what to put refer to this the inputs below which are listed in the same order as you'll be asked.
 
