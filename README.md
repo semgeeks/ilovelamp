@@ -40,7 +40,7 @@ Once you've executed ill.sh you'll be prompted to input information. If you're u
 
 
 ##Let's Encrypt
-Once you've set up your server you might as well set up an ssl certificate while you're there. Below are the steps to generate an ssl certificate and force ssl on your server with let's encrypt as well as a couple useful commands.
+Once you've set up your server you might as well set up an ssl certificate while you're there. Below are the steps to generate an ssl certificate and force ssl on your server with let's encrypt.
 
 First is going into your opt folder where 3rd party software should be installed. Then clone the Let's Encrypt repository from git. Once you've pulled that down you're going to be running an apache install.
 
